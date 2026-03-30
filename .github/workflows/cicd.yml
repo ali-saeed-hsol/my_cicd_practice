@@ -1,4 +1,5 @@
 
+
 name: CI/CD Pipeline
 
 on:
@@ -20,7 +21,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Step 3: Install dependencies (Testing the "CI" part)
+      # Step 3: Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -30,10 +31,22 @@ jobs:
       - name: Check Syntax
         run: python -m py_compile app.py
 
-      # Step 5: Docker Build (The "Package" part)
+      # Step 5: Docker Build
       - name: Build Docker Image
         run: docker build -t my-python-app:latest .
 
-      # Step 6: Simulate Deployment (The "CD" part)
+      # Step 6: TRIVY SECURITY SCAN
+      # This step will scan the image we just built in Step 5.
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
+        with:
+          image-ref: 'my-python-app:latest'
+          format: 'table'
+          exit-code: '1'       # If security holes are found, this STOPS the pipeline.
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true # Focuses only on things you can actually fix.
+
+      # Step 7: Simulate Deployment
+      # This will ONLY run if Step 6 (Trivy) passes successfully.
       - name: Deploy Simulation
         run: echo "Deployment successful to Production Server!"

@@ -1,5 +1,3 @@
-
-
 name: CI/CD Pipeline
 
 on:
@@ -11,23 +9,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Pull the code from GitHub onto the runner
+      # Step 1: Updated to v6 (March 2026 standard)
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      # Step 2: Set up Python environment
+      # Step 2: Updated to v6.2.0 and Python 3.13 (Latest stable in 2026)
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version: '3.13'
+          cache: 'pip' # Added caching to make your logs and build faster
 
-      # Step 3: Install dependencies
+      # Step 3: Install dependencies & fix the "Error" you found
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          # We force-upgrade the vulnerable packages Trivy identified in your logs
+          pip install --upgrade jaraco.context>=6.1.0 wheel>=0.46.2
           pip install -r requirements.txt
 
-      # Step 4: Run a basic check (Linting/Syntax)
+      # Step 4: Run a basic check
       - name: Check Syntax
         run: python -m py_compile app.py
 
@@ -36,17 +37,16 @@ jobs:
         run: docker build -t my-python-app:latest .
 
       # Step 6: TRIVY SECURITY SCAN
-      # This step will scan the image we just built in Step 5.
+      # UPDATED: Using v0.35.0 to avoid the March 2026 supply chain compromise.
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: 'my-python-app:latest'
           format: 'table'
-          exit-code: '1'       # If security holes are found, this STOPS the pipeline.
+          exit-code: '1'
           severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true # Focuses only on things you can actually fix.
+          ignore-unfixed: true
 
       # Step 7: Simulate Deployment
-      # This will ONLY run if Step 6 (Trivy) passes successfully.
       - name: Deploy Simulation
         run: echo "Deployment successful to Production Server!"
